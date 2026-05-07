@@ -14,6 +14,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Pull Raw Data from Masters-Council
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          git clone "https://x-access-token:${GH_PAT}@github.com/wenfp108/Masters-Council.git" /tmp/Masters-Council
+          mkdir -p vault
+          if [ -d "/tmp/Masters-Council/vault/raw" ]; then
+            cp -r /tmp/Masters-Council/vault/raw vault/raw
+            echo "✅ Raw data pulled from Masters-Council"
+          else
+            echo "⚠️ No raw data found in Masters-Council"
+          fi
+          # 也拉取已有的 filtered 和 meta，用于追加
+          if [ -d "/tmp/Masters-Council/vault/filtered" ]; then
+            cp -r /tmp/Masters-Council/vault/filtered vault/filtered
+          fi
+          if [ -d "/tmp/Masters-Council/vault/meta" ]; then
+            cp -r /tmp/Masters-Council/vault/meta vault/meta
+          fi
+          rm -rf /tmp/Masters-Council
+
       - uses: actions/setup-python@v4
         with:
           python-version: '3.9'
