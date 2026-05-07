@@ -97,7 +97,18 @@ def fetch_twitter():
         if out_file.exists():
             existing = json.loads(out_file.read_text())
 
-        # 去重
+        # 同 batch 内按 URL 去重，保留互动数据最高的
+        best_by_url = {}
+        for i in items:
+            url = i.get("url")
+            if not url:
+                continue
+            engagement = i.get("likes", 0) + i.get("retweets", 0) * 5 + i.get("bookmarks", 0) * 10
+            if url not in best_by_url or engagement > best_by_url[url][1]:
+                best_by_url[url] = (i, engagement)
+        items = [v[0] for v in best_by_url.values()]
+
+        # 和已有数据去重
         existing_urls = {i.get("url") for i in existing}
         new_items = [i for i in items if i.get("url") not in existing_urls]
 
