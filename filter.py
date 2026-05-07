@@ -19,7 +19,7 @@ RAW_DIR = Path("vault/raw")
 FILTERED_DIR = Path("vault/filtered")
 META_DIR = Path("vault/meta")
 
-AI_API_URL = "https://token-plan-sgp.xiaomimimo.com/v1"
+AI_API_URL = "https://token-plan-sgp.xiaomimimo.com/v1/chat/completions"
 AI_MODEL = "mimo-v2.5-pro"
 AI_API_KEY_ENV = "SILICON_FLOW_KEY"
 AI_TIMEOUT = 30
