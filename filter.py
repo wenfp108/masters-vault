@@ -25,7 +25,7 @@ AI_API_KEY_ENV = "SILICON_FLOW_KEY"
 AI_TIMEOUT = 30
 AI_MAX_RETRIES = 3
 
-SCORE_BATCH_SIZE = 50
+SCORE_BATCH_SIZE = 10
 SCORE_THRESHOLD = 3
 RULE_MIN_TITLE_WORDS = 5
 
@@ -69,17 +69,17 @@ def rule_filter(items):
 
 # ─── 第二级: AI 批量打分 ─────────────────────────────────
 
-SCORE_PROMPT = """你是一个内容质量评估器。对以下 {n} 条内容逐条打分。
+SCORE_SYSTEM = "你是内容质量评估器。只输出 JSON 数组，不要输出其他内容。"
+SCORE_PROMPT = """对以下 {n} 条内容逐条打分。
 
 评分标准:
-5 = 大师的核心原创洞见、深度访谈、重要演讲
+5 = 大师核心原创洞见、深度访谈、重要演讲
 4 = 有价值的二手分析、详细解读
 3 = 一般性报道、常规内容
 2 = 浅层内容、重复信息
 1 = 噪音、标题党、无关内容
 
-只输出 JSON 数组，每个元素格式: {{"id": 序号, "score": 分数}}
-不要输出任何其他内容。
+输出格式: [{{"id": 1, "score": 5}}, ...]
 
 {items}"""
 
@@ -105,8 +105,12 @@ def _call_ai(prompt):
     }
     payload = {
         "model": AI_MODEL,
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": [
+            {"role": "system", "content": SCORE_SYSTEM},
+            {"role": "user", "content": prompt},
+        ],
         "temperature": 0.1,
+        "max_tokens": 500,
     }
 
     for attempt in range(AI_MAX_RETRIES):
@@ -117,11 +121,16 @@ def _call_ai(prompt):
             resp.raise_for_status()
             data = resp.json()
             return data["choices"][0]["message"]["content"]
+        except requests.exceptions.Timeout:
+            print(f"   ⏳ AI 超时 (第 {attempt+1}/{AI_MAX_RETRIES} 次)")
+        except requests.exceptions.HTTPError as e:
+            print(f"   ⚠️ AI HTTP {e.response.status_code} (第 {attempt+1}/{AI_MAX_RETRIES} 次)")
         except Exception as e:
-            if attempt < AI_MAX_RETRIES - 1:
-                time.sleep(2 ** (attempt + 1))
-            else:
-                print(f"   ⚠️ AI 打分失败: {e}")
+            print(f"   ⚠️ AI 异常: {e} (第 {attempt+1}/{AI_MAX_RETRIES} 次)")
+
+        if attempt < AI_MAX_RETRIES - 1:
+            time.sleep(2 ** (attempt + 1))
+
     return None
 
 
