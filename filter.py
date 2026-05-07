@@ -227,13 +227,15 @@ def _group_by_type(items):
 
 
 def filter_master(master_dir):
-    """增量过滤：只对 raw 中新增的数据做 AI 打分，合并到 filtered 永久文件"""
+    """增量过滤：按月读取 raw，过滤后写入 filtered 按月按类型分文件"""
     master_name = master_dir.name
+    month_str = datetime.now(BJ).strftime("%Y-%m")
     print(f"\n📖 过滤: {master_name}")
 
-    raw_file = master_dir / "data.json"
+    # 读取本月 raw 数据
+    raw_file = master_dir / f"{month_str}.json"
     if not raw_file.exists():
-        print("   ⏭️  无数据文件")
+        print(f"   ⏭️  无本月数据 ({month_str})")
         return None
 
     all_raw = json.loads(raw_file.read_text())
@@ -241,7 +243,7 @@ def filter_master(master_dir):
         print("   ⏭️  空数据")
         return None
 
-    # 加载已过滤的数据（用于去重）
+    # 加载已过滤的数据（所有月份，用于去重）
     out_dir = FILTERED_DIR / master_name
     out_dir.mkdir(parents=True, exist_ok=True)
     existing_filtered = {}
@@ -250,7 +252,7 @@ def filter_master(master_dir):
             key = item.get("url") or item.get("title", "")
             existing_filtered[key] = item
 
-    # 找出新增的（raw 里有但 filtered 里没有的）
+    # 找出新增的
     new_items = []
     for item in all_raw:
         key = item.get("url") or item.get("title", "")
@@ -258,36 +260,52 @@ def filter_master(master_dir):
             new_items.append(item)
 
     if not new_items:
-        print(f"   ✅ 无新增数据 (raw: {len(all_raw)}, filtered: {len(existing_filtered)})")
+        print(f"   ✅ 无新增 (raw: {len(all_raw)}, filtered: {len(existing_filtered)})")
         return {"master": master_name, "raw": len(all_raw), "new": 0, "filtered": len(existing_filtered), "types": {}}
 
-    print(f"   📥 新增: {len(new_items)} 条 (raw 总计: {len(all_raw)})")
+    print(f"   📥 新增: {len(new_items)} 条")
 
-    # 第一级: 规则过滤（只对新增）
+    # 规则过滤
     new_items = rule_filter(new_items)
-    print(f"   🧹 规则过滤后: {len(new_items)} 条")
+    print(f"   🧹 规则过滤: {len(new_items)} 条")
 
-    # 第二级: AI 打分（只对新增）
+    # AI 打分
     new_items = score_batch(new_items)
-    print(f"   🤖 AI 打分后: {len(new_items)} 条")
+    print(f"   🤖 AI 打分: {len(new_items)} 条")
 
-    # 合并新旧数据
+    # 合并到已有数据
     for item in new_items:
         key = item.get("url") or item.get("title", "")
         existing_filtered[key] = item
 
-    # 按类型分组写入
+    # 按月份+类型写入
     all_filtered = list(existing_filtered.values())
-    groups = _group_by_type(all_filtered)
+    # 按月份分组
+    month_groups = {}
+    for item in all_filtered:
+        pub = item.get("published", "")
+        # 从 published 日期提取月份，没有的用当前月
+        m = month_str  # 默认当前月
+        if pub:
+            try:
+                # 尝试解析各种日期格式
+                from email.utils import parsedate_to_datetime
+                dt = parsedate_to_datetime(pub)
+                m = dt.strftime("%Y-%m")
+            except Exception:
+                pass
+        month_groups.setdefault(m, []).append(item)
+
     type_stats = {}
+    for m, m_items in month_groups.items():
+        groups = _group_by_type(m_items)
+        for itype, items in groups.items():
+            filename = f"{m}-{TYPE_FILE_MAP.get(itype, itype)}.json"
+            out_file = out_dir / filename
+            out_file.write_text(json.dumps(items, ensure_ascii=False, indent=2))
+            type_stats[f"{m}/{itype}"] = len(items)
 
-    for itype, items in groups.items():
-        filename = TYPE_FILE_MAP.get(itype, itype) + ".json"
-        out_file = out_dir / filename
-        out_file.write_text(json.dumps(items, ensure_ascii=False, indent=2))
-        type_stats[itype] = len(items)
-
-    summary = " | ".join(f"{t}: {n}" for t, n in sorted(type_stats.items(), key=lambda x: -x[1]))
+    summary = " | ".join(f"{k}: {v}" for k, v in sorted(type_stats.items()))
     print(f"   📁 {summary}")
 
     return {

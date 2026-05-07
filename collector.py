@@ -448,9 +448,10 @@ def _flatten_sources(cfg):
 
 
 def save_data(master_key, items):
+    month_str = datetime.now(BJ).strftime("%Y-%m")
     out_dir = DATA_DIR / master_key
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_file = out_dir / "data.json"
+    out_file = out_dir / f"{month_str}.json"
 
     existing = []
     if out_file.exists():
