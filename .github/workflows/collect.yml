@@ -37,10 +37,16 @@ jobs:
           python-version: '3.9'
 
       - name: Install Dependencies
-        run: pip install requests pyyaml beautifulsoup4 feedparser yt-dlp
+        run: pip install requests pyyaml beautifulsoup4 feedparser yt-dlp supabase
 
       - name: Run Collector
         run: python collector.py
+
+      - name: Fetch Twitter from Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python fetch_twitter.py
 
       - name: Push Raw Data to Masters-Council
         env:
