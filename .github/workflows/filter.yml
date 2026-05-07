@@ -42,6 +42,11 @@ jobs:
       - name: Install Dependencies
         run: pip install requests
 
+      - name: Test AI API
+        env:
+          SILICON_FLOW_KEY: ${{ secrets.SILICON_FLOW_KEY }}
+        run: python filter.py --test
+
       - name: Run AI Filter
         env:
           SILICON_FLOW_KEY: ${{ secrets.SILICON_FLOW_KEY }}
