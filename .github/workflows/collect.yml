@@ -1,0 +1,32 @@
+name: Daily Collect
+
+on:
+  schedule:
+    - cron: '37 3 * * *'  # 北京时间 11:37
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Dependencies
+        run: pip install requests pyyaml beautifulsoup4 feedparser yt-dlp
+
+      - name: Run Collector
+        run: python collector.py
+
+      - name: Commit Results
+        run: |
+          git config user.name "Vault Bot"
+          git config user.email "bot@wenfp108.com"
+          git add data/ README.md
+          git diff --cached --quiet || (git commit -m "🏛️ Daily collect $(date +'%Y-%m-%d')" && git push)

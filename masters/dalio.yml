@@ -1,0 +1,33 @@
+name: Ray Dalio
+tags: [macro, debt-cycles, principles, all-weather]
+
+sources:
+  books:
+    - query: "Ray Dalio"
+      platform: zlibrary
+
+  youtube:
+    - query: "Ray Dalio principles"
+      limit: 10
+    - query: "Ray Dalio debt cycle"
+      limit: 10
+    - query: "Ray Dalio interview"
+      limit: 10
+    - query: "Ray Dalio economy"
+      limit: 5
+
+  twitter:
+    - account: RayDalio
+    - keywords: ["Ray Dalio", "Bridgewater"]
+
+  articles:
+    - query: "Ray Dalio"
+      sources: [linkedin, bloomberg, wsj]
+
+  reports:
+    - name: "Principles by Ray Dalio"
+      url: "https://www.principles.com/"
+      type: static
+    - name: "Bridgewater Research"
+      url: "https://www.bridgewater.com/research-and-insights"
+      type: static

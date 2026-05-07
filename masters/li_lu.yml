@@ -1,0 +1,23 @@
+name: Li Lu (李录)
+tags: [value-investing, china, himalaya-capital]
+
+sources:
+  books:
+    - query: "Li Lu value investing"
+      platform: zlibrary
+    - query: "李录 价值投资"
+      platform: zlibrary
+
+  youtube:
+    - query: "Li Lu interview"
+      limit: 10
+    - query: "Li Lu Columbia Business School"
+      limit: 5
+    - query: "李录 演讲"
+      limit: 5
+
+  articles:
+    - query: "Li Lu Himalaya Capital"
+      sources: [wsj, bloomberg]
+    - query: "李录 喜马拉雅资本"
+      sources: [xueqiu]

@@ -1,0 +1,34 @@
+name: Naval Ravikant
+tags: [startups, wealth, happiness, specific-knowledge]
+
+sources:
+  books:
+    - query: "Naval Ravikant"
+      platform: zlibrary
+
+  youtube:
+    - query: "Naval Ravikant interview"
+      limit: 10
+    - query: "Naval Ravikant podcast"
+      limit: 10
+    - query: "Naval wealth happiness"
+      limit: 5
+
+  twitter:
+    - account: naval
+    - keywords: ["Naval Ravikant", "@naval"]
+
+  podcasts:
+    - name: "Naval Podcast"
+      url: "https://naval.libsyn.com/"
+    - query: "Naval Ravikant guest"
+
+  articles:
+    - query: "Naval Ravikant"
+      sources: [techcrunch, medium]
+
+  blogs:
+    - name: "Naval's Blog"
+      url: "https://nav.al/"
+    - name: "Startupboy"
+      url: "https://startupboy.com/"
