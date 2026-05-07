@@ -1,7 +1,7 @@
 """
 Masters Vault — 从 Supabase 拉取 Twitter 数据
 
-从 Supabase 的 twitter_logs 表拉取大师相关推文，
+从 Supabase 的 raw_signals 表拉取大师相关推文，
 存到 vault/raw/{master}/twitter-{month}.json。
 
 需要环境变量: SUPABASE_URL, SUPABASE_KEY
@@ -16,14 +16,15 @@ DATA_DIR = Path("vault/raw")
 
 # 大师的 Twitter 账号（screen_name）
 MASTER_ACCOUNTS = {
-    "buffett": ["WarrenBuffett"],
     "dalio": ["RayDalio"],
-    "marks": ["HowardMarksxxx"],
-    "munger": ["_CharlieMunger"],
     "naval": ["naval"],
     "taleb": ["nntaleb"],
-    "soros": ["GeorgeSoros"],
-    "li_lu": [],  # Li Lu 没有 Twitter
+    # 以下大师 x-kit 未追踪，留空
+    "buffett": [],
+    "marks": [],
+    "munger": [],
+    "soros": [],
+    "li_lu": [],
 }
 
 FETCH_LIMIT = 200  # 每个账号拉多少条
@@ -52,8 +53,9 @@ def fetch_twitter():
         all_tweets = []
         for account in accounts:
             try:
-                res = supabase.table("twitter_logs") \
+                res = supabase.table("raw_signals") \
                     .select("*") \
+                    .eq("signal_type", "twitter") \
                     .eq("screen_name", account) \
                     .order("bj_time", desc=True) \
                     .limit(FETCH_LIMIT) \
