@@ -97,6 +97,7 @@ def _format_items_for_scoring(items):
 def _call_ai(prompt):
     api_key = os.environ.get(AI_API_KEY_ENV)
     if not api_key:
+        print("   ❌ 未找到 SILICON_FLOW_KEY 环境变量")
         return None
 
     headers = {
@@ -113,24 +114,32 @@ def _call_ai(prompt):
         "max_tokens": 500,
     }
 
+    print(f"   🔗 请求: {AI_API_URL} model={AI_MODEL} prompt_len={len(prompt)}")
+
     for attempt in range(AI_MAX_RETRIES):
         try:
             resp = requests.post(
                 AI_API_URL, json=payload, headers=headers, timeout=AI_TIMEOUT
             )
+            print(f"   📡 响应: status={resp.status_code}")
             resp.raise_for_status()
             data = resp.json()
-            return data["choices"][0]["message"]["content"]
+            content = data["choices"][0]["message"]["content"]
+            print(f"   ✅ AI 返回: {content[:100]}...")
+            return content
         except requests.exceptions.Timeout:
             print(f"   ⏳ AI 超时 (第 {attempt+1}/{AI_MAX_RETRIES} 次)")
         except requests.exceptions.HTTPError as e:
-            print(f"   ⚠️ AI HTTP {e.response.status_code} (第 {attempt+1}/{AI_MAX_RETRIES} 次)")
+            print(f"   ⚠️ AI HTTP {e.response.status_code}: {e.response.text[:200]}")
         except Exception as e:
-            print(f"   ⚠️ AI 异常: {e} (第 {attempt+1}/{AI_MAX_RETRIES} 次)")
+            print(f"   ⚠️ AI 异常: {type(e).__name__}: {e}")
 
         if attempt < AI_MAX_RETRIES - 1:
-            time.sleep(2 ** (attempt + 1))
+            wait = 2 ** (attempt + 1)
+            print(f"   💤 等待 {wait}s 后重试...")
+            time.sleep(wait)
 
+    print("   ❌ AI 打分全部失败")
     return None
 
 
@@ -324,4 +333,17 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    if "--test" in sys.argv:
+        # 测试 API 连通性
+        print("🧪 测试 SiliconFlow API...")
+        print(f"   URL: {AI_API_URL}")
+        print(f"   Model: {AI_MODEL}")
+        print(f"   Key: {'已设置' if os.environ.get(AI_API_KEY_ENV) else '未设置'}")
+        result = _call_ai('对以下1条内容打分，输出JSON: \n1. [video/youtube] Warren Buffett interview on CNBC\n\n输出: [{"id": 1, "score": ?}]')
+        if result:
+            print(f"   ✅ API 正常: {result}")
+        else:
+            print("   ❌ API 不可用")
+    else:
+        main()
