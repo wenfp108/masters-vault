@@ -209,30 +209,16 @@ def _crawl_youtube(cfg):
 
 
 def _crawl_twitter(cfg):
+    """推文采集：通过 Google News RSS 间接获取
+    注：nitter 已死，不再尝试。正经推文数据由 x-kit 项目提供。"""
     items = []
-    account = None
     for src in cfg.get("sources", {}).get("twitter", []):
-        if "account" in src:
-            account = src["account"]
         for kw in src.get("keywords", []):
             items.extend(search_news(f"twitter {kw}", limit=5))
             time.sleep(0.5)
-    if account:
-        try:
-            r = requests.get(f"https://nitter.net/{account}/rss", headers=HEADERS, timeout=10)
-            if r.status_code == 200:
-                feed = feedparser.parse(r.text)
-                for entry in feed.entries[:20]:
-                    items.append({
-                        "type": "tweet",
-                        "title": entry.get("title", "")[:100],
-                        "url": entry.get("link", ""),
-                        "published": entry.get("published", ""),
-                        "source": "twitter",
-                        "account": account,
-                    })
-        except Exception:
-            pass
+    # URL 转换：nitter → x.com
+    for item in items:
+        item["url"] = _fix_twitter_url(item.get("url", ""))
     return items
 
 
@@ -305,10 +291,24 @@ def _crawl_reports(cfg):
 
 # ─── 采集时算法过滤 ───────────────────────────────────────
 
+def _fix_twitter_url(url):
+    """nitter URL → x.com 原链接"""
+    if not url:
+        return url
+    # nitter.net/RayDalio/status/xxx#m → x.com/RayDalio/status/xxx
+    import re
+    match = re.search(r"nitter\.net/([^/]+/status/\d+)", url)
+    if match:
+        return f"https://x.com/{match.group(1)}"
+    return url
+
+
 def clean_items(items):
     """按内容类型做规则过滤，采集时就剔除噪音"""
     cleaned = []
     for item in items:
+        # 通用 URL 修复
+        item["url"] = _fix_twitter_url(item.get("url", ""))
         if _should_keep(item):
             cleaned.append(item)
     return cleaned
