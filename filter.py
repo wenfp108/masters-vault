@@ -227,40 +227,58 @@ def _group_by_type(items):
 
 
 def filter_master(master_dir):
-    """处理单个大师的所有日期文件，按类型输出"""
+    """增量过滤：只对 raw 中新增的数据做 AI 打分，合并到 filtered 永久文件"""
     master_name = master_dir.name
     print(f"\n📖 过滤: {master_name}")
 
-    json_files = sorted(master_dir.glob("*.json"))
-    if not json_files:
+    raw_file = master_dir / "data.json"
+    if not raw_file.exists():
         print("   ⏭️  无数据文件")
         return None
 
-    # 收集所有日期的数据
-    all_items = []
-    for json_file in json_files:
-        items = json.loads(json_file.read_text())
-        all_items.extend(items)
-
-    if not all_items:
+    all_raw = json.loads(raw_file.read_text())
+    if not all_raw:
         print("   ⏭️  空数据")
         return None
 
-    raw_count = len(all_items)
-
-    # 第一级: 规则过滤
-    all_items = rule_filter(all_items)
-    rule_count = len(all_items)
-
-    # 第二级: AI 打分
-    all_items = score_batch(all_items)
-    ai_count = len(all_items)
-
-    # 按类型分组输出
+    # 加载已过滤的数据（用于去重）
     out_dir = FILTERED_DIR / master_name
     out_dir.mkdir(parents=True, exist_ok=True)
+    existing_filtered = {}
+    for f in out_dir.glob("*.json"):
+        for item in json.loads(f.read_text()):
+            key = item.get("url") or item.get("title", "")
+            existing_filtered[key] = item
 
-    groups = _group_by_type(all_items)
+    # 找出新增的（raw 里有但 filtered 里没有的）
+    new_items = []
+    for item in all_raw:
+        key = item.get("url") or item.get("title", "")
+        if key not in existing_filtered:
+            new_items.append(item)
+
+    if not new_items:
+        print(f"   ✅ 无新增数据 (raw: {len(all_raw)}, filtered: {len(existing_filtered)})")
+        return {"master": master_name, "raw": len(all_raw), "new": 0, "filtered": len(existing_filtered), "types": {}}
+
+    print(f"   📥 新增: {len(new_items)} 条 (raw 总计: {len(all_raw)})")
+
+    # 第一级: 规则过滤（只对新增）
+    new_items = rule_filter(new_items)
+    print(f"   🧹 规则过滤后: {len(new_items)} 条")
+
+    # 第二级: AI 打分（只对新增）
+    new_items = score_batch(new_items)
+    print(f"   🤖 AI 打分后: {len(new_items)} 条")
+
+    # 合并新旧数据
+    for item in new_items:
+        key = item.get("url") or item.get("title", "")
+        existing_filtered[key] = item
+
+    # 按类型分组写入
+    all_filtered = list(existing_filtered.values())
+    groups = _group_by_type(all_filtered)
     type_stats = {}
 
     for itype, items in groups.items():
@@ -269,16 +287,14 @@ def filter_master(master_dir):
         out_file.write_text(json.dumps(items, ensure_ascii=False, indent=2))
         type_stats[itype] = len(items)
 
-    # 打印摘要
     summary = " | ".join(f"{t}: {n}" for t, n in sorted(type_stats.items(), key=lambda x: -x[1]))
-    print(f"   📊 {raw_count} → {rule_count} → {ai_count} 条")
     print(f"   📁 {summary}")
 
     return {
         "master": master_name,
-        "raw": raw_count,
-        "rule_pass": rule_count,
-        "ai_pass": ai_count,
+        "raw": len(all_raw),
+        "new": len(new_items),
+        "filtered": len(all_filtered),
         "types": type_stats,
     }
 
@@ -307,8 +323,8 @@ def main():
 
     # 保存元数据
     total_raw = sum(s["raw"] for s in all_stats)
-    total_filtered = sum(s["ai_pass"] for s in all_stats)
-    filter_rate = f"{(1 - total_filtered / total_raw) * 100:.0f}%" if total_raw else "-"
+    total_new = sum(s["new"] for s in all_stats)
+    total_filtered = sum(s["filtered"] for s in all_stats)
 
     # 汇总各类型
     type_totals = {}
@@ -320,15 +336,15 @@ def main():
         "timestamp": datetime.now(BJ).isoformat(),
         "mode": mode,
         "total_raw": total_raw,
+        "new_scored": total_new,
         "total_filtered": total_filtered,
-        "filter_rate": filter_rate,
         "type_totals": dict(sorted(type_totals.items(), key=lambda x: -x[1])),
         "masters": all_stats,
     }
     meta_file = META_DIR / f"{datetime.now(BJ).strftime('%Y%m%d')}.json"
     meta_file.write_text(json.dumps(meta, ensure_ascii=False, indent=2))
 
-    print(f"\n✅ 过滤完成: {total_raw} → {total_filtered} ({filter_rate} 过滤率)")
+    print(f"\n✅ 过滤完成: raw {total_raw} 条, 本次新增评分 {total_new} 条, filtered 总计 {total_filtered} 条")
     print(f"📁 元数据: {meta_file}")
 
 

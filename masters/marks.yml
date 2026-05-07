@@ -1,26 +1,24 @@
 name: Howard Marks
-tags: [value-investing, risk-control, market-cycles, oaktree]
-
+tags:
+- value-investing
+- risk-control
+- market-cycles
+- oaktree
 sources:
   books:
-    - query: "Howard Marks Oaktree"
-      platform: zlibrary
-
+  - query: Howard Marks Oaktree
+    platform: zlibrary
   youtube:
-    - query: "Howard Marks interview"
-      limit: 10
-    - query: "Howard Marks Oaktree"
-      limit: 10
-
-  twitter:
-    - account: HowardMarksxxx
-    - keywords: ["Howard Marks", "Oaktree Capital"]
-
+  - query: Howard Marks interview
+    limit: 10
+  - query: Howard Marks Oaktree
+    limit: 10
   articles:
-    - query: "Howard Marks memo"
-      sources: [bloomberg, wsj]
-
+  - query: Howard Marks memo
+    sources:
+    - bloomberg
+    - wsj
   reports:
-    - name: "Oaktree Memos"
-      url: "https://www.oaktreecapital.com/insights/howard-marks-memos"
-      type: rss
+  - name: Oaktree Memos
+    url: https://www.oaktreecapital.com/insights/howard-marks-memos
+    type: rss

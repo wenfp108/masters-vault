@@ -1,20 +1,24 @@
 name: George Soros
-tags: [macro, reflexivity, quantum-fund, open-society]
-update_freq: weekly  # Soros 不活跃，低频更新
-
+tags:
+- macro
+- reflexivity
+- quantum-fund
+- open-society
+update_freq: weekly
 sources:
   books:
-    - query: "George Soros"
-      platform: zlibrary
-    - query: "Soros reflexivity"
-      platform: zlibrary
-
+  - query: George Soros
+    platform: zlibrary
+  - query: Soros reflexivity
+    platform: zlibrary
   youtube:
-    - query: "George Soros interview"
-      limit: 10
-    - query: "Soros reflexivity theory"
-      limit: 5
-
+  - query: George Soros interview
+    limit: 10
+  - query: Soros reflexivity theory
+    limit: 5
   articles:
-    - query: "George Soros"
-      sources: [bloomberg, wsj, project-syndicate]
+  - query: George Soros
+    sources:
+    - bloomberg
+    - wsj
+    - project-syndicate

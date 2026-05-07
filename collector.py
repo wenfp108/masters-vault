@@ -188,7 +188,6 @@ def search_goodreads(query, limit=5):
 
 CRAWLERS = {
     "youtube": lambda cfg: _crawl_youtube(cfg),
-    "twitter": lambda cfg: _crawl_twitter(cfg),
     "books": lambda cfg: _crawl_books(cfg),
     "podcasts": lambda cfg: _crawl_podcasts(cfg),
     "articles": lambda cfg: _crawl_articles(cfg),
@@ -207,19 +206,6 @@ def _crawl_youtube(cfg):
         time.sleep(1)
     return items
 
-
-def _crawl_twitter(cfg):
-    """推文采集：通过 Google News RSS 间接获取
-    注：nitter 已死，不再尝试。正经推文数据由 x-kit 项目提供。"""
-    items = []
-    for src in cfg.get("sources", {}).get("twitter", []):
-        for kw in src.get("keywords", []):
-            items.extend(search_news(f"twitter {kw}", limit=5))
-            time.sleep(0.5)
-    # URL 转换：nitter → x.com
-    for item in items:
-        item["url"] = _fix_twitter_url(item.get("url", ""))
-    return items
 
 
 def _crawl_books(cfg):
@@ -462,22 +448,23 @@ def _flatten_sources(cfg):
 
 
 def save_data(master_key, items):
-    day_str = datetime.now(BJ).strftime("%Y%m%d")
     out_dir = DATA_DIR / master_key
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_file = out_dir / f"{day_str}.json"
+    out_file = out_dir / "data.json"
 
     existing = []
     if out_file.exists():
         existing = json.loads(out_file.read_text())
 
-    # 同日去重：按 url+title 去重
+    # 增量去重：按 url+title 去重
     existing_keys = {item_id(i) for i in existing}
     new_items = [i for i in items if item_id(i) not in existing_keys]
 
-    existing.extend(new_items)
-    out_file.write_text(json.dumps(existing, ensure_ascii=False, indent=2))
-    return len(existing)
+    if new_items:
+        existing.extend(new_items)
+        out_file.write_text(json.dumps(existing, ensure_ascii=False, indent=2))
+
+    return len(new_items), len(existing)
 
 
 def main():
@@ -499,12 +486,13 @@ def main():
                 continue
 
         new_items = collect_master(master, seen)
-        total = save_data(file_key, new_items)
+        added, total = save_data(file_key, new_items)
 
         source_types = set(i.get("type") for i in new_items)
         results.append({
             "name": name,
             "new": len(new_items),
+            "added": added,
             "total": total,
             "sources": ", ".join(sorted(source_types)) if source_types else "-",
         })
@@ -512,7 +500,8 @@ def main():
     save_seen(seen)
 
     total_new = sum(r["new"] for r in results)
-    print(f"\n🏛️ 采集完成: {total_new} 条新增, {len(masters)} 位大师")
+    total_added = sum(r["added"] for r in results)
+    print(f"\n🏛️ 采集完成: {total_new} 条采集, {total_added} 条新增入库, {len(masters)} 位大师")
     print(f"📁 原始数据: {DATA_DIR.resolve()}")
 
     # 输出摘要供 push.py 使用

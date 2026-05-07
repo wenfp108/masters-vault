@@ -1,31 +1,29 @@
 name: Nassim Nicholas Taleb
-tags: [risk, antifragility, black-swan, probability]
-
+tags:
+- risk
+- antifragility
+- black-swan
+- probability
 sources:
   books:
-    - query: "Nassim Taleb"
-      platform: zlibrary
-    - query: "Black Swan Taleb"
-      platform: zlibrary
-
+  - query: Nassim Taleb
+    platform: zlibrary
+  - query: Black Swan Taleb
+    platform: zlibrary
   youtube:
-    - query: "Nassim Taleb interview"
-      limit: 10
-    - query: "Nassim Taleb black swan"
-      limit: 10
-    - query: "Nassim Taleb antifragile"
-      limit: 5
-
-  twitter:
-    - account: nntaleb
-    - keywords: ["Nassim Taleb", "@nntaleb", "antifragile", "black swan"]
-
+  - query: Nassim Taleb interview
+    limit: 10
+  - query: Nassim Taleb black swan
+    limit: 10
+  - query: Nassim Taleb antifragile
+    limit: 5
   articles:
-    - query: "Nassim Taleb"
-      sources: [medium, wsj]
-
+  - query: Nassim Taleb
+    sources:
+    - medium
+    - wsj
   academic:
-    - query: "Nassim Taleb"
-      platform: arxiv
-    - query: "fat tails risk Taleb"
-      platform: arxiv
+  - query: Nassim Taleb
+    platform: arxiv
+  - query: fat tails risk Taleb
+    platform: arxiv

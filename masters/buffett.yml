@@ -1,33 +1,32 @@
 name: Warren Buffett
-tags: [value-investing, moat, compound-interest, berkshire]
-
+tags:
+- value-investing
+- moat
+- compound-interest
+- berkshire
 sources:
   books:
-    - query: "Warren Buffett"
-      platform: zlibrary
-    - query: "Buffettology"
-      platform: zlibrary
-
+  - query: Warren Buffett
+    platform: zlibrary
+  - query: Buffettology
+    platform: zlibrary
   youtube:
-    - query: "Warren Buffett interview"
-      limit: 10
-    - query: "Warren Buffett Berkshire meeting"
-      limit: 10
-    - query: "Warren Buffett shareholder letter"
-      limit: 5
-
-  twitter:
-    - account: WarrenBuffett
-    - keywords: ["Warren Buffett", "Berkshire Hathaway", "Buffett"]
-
+  - query: Warren Buffett interview
+    limit: 10
+  - query: Warren Buffett Berkshire meeting
+    limit: 10
+  - query: Warren Buffett shareholder letter
+    limit: 5
   articles:
-    - query: "Warren Buffett"
-      sources: [wsj, bloomberg, fortune]
-
+  - query: Warren Buffett
+    sources:
+    - wsj
+    - bloomberg
+    - fortune
   reports:
-    - name: "Berkshire Hathaway Annual Letters"
-      url: "https://www.berkshirehathaway.com/letters/letters.html"
-      type: static
-    - name: "Berkshire Hathaway Annual Reports"
-      url: "https://www.berkshirehathaway.com/reports.html"
-      type: static
+  - name: Berkshire Hathaway Annual Letters
+    url: https://www.berkshirehathaway.com/letters/letters.html
+    type: static
+  - name: Berkshire Hathaway Annual Reports
+    url: https://www.berkshirehathaway.com/reports.html
+    type: static

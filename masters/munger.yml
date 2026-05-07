@@ -1,35 +1,32 @@
 name: Charlie Munger
 born: 1924-2023
-tags: [value-investing, mental-models, multidisciplinary]
-
+tags:
+- value-investing
+- mental-models
+- multidisciplinary
 sources:
   books:
-    - query: "Charlie Munger"
-      platform: zlibrary
-
+  - query: Charlie Munger
+    platform: zlibrary
   youtube:
-    - query: "Charlie Munger interview"
-      limit: 10
-    - query: "Charlie Munger speech"
-      limit: 10
-    - query: "Charlie Munger Daily Journal"
-      limit: 10
-    - query: "Berkshire Hathaway annual meeting Munger"
-      limit: 5
-
-  twitter:
-    - account: _CharlieMunger  # fan/tribute account
-    - keywords: ["Charlie Munger", "Munger quote", "Munger mental model"]
-
+  - query: Charlie Munger interview
+    limit: 10
+  - query: Charlie Munger speech
+    limit: 10
+  - query: Charlie Munger Daily Journal
+    limit: 10
+  - query: Berkshire Hathaway annual meeting Munger
+    limit: 5
   podcasts:
-    - query: "Charlie Munger"
-      platform: apple
-
+  - query: Charlie Munger
+    platform: apple
   articles:
-    - query: "Charlie Munger investing wisdom"
-      sources: [wsj, bloomberg, economist]
-
+  - query: Charlie Munger investing wisdom
+    sources:
+    - wsj
+    - bloomberg
+    - economist
   reports:
-    - name: "Berkshire Hathaway Annual Letters"
-      url: "https://www.berkshirehathaway.com/letters/letters.html"
-      type: static
+  - name: Berkshire Hathaway Annual Letters
+    url: https://www.berkshirehathaway.com/letters/letters.html
+    type: static
