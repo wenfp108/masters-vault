@@ -14,6 +14,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Pull State from Masters-Council
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          git clone --depth 1 "https://x-access-token:${GH_PAT}@github.com/wenfp108/Masters-Council.git" /tmp/Masters-Council
+          mkdir -p vault
+          # 拉取去重记录
+          if [ -f "/tmp/Masters-Council/vault/.seen.json" ]; then
+            cp /tmp/Masters-Council/vault/.seen.json vault/.seen.json
+            echo "✅ 拉取去重记录: $(cat vault/.seen.json | python3 -c 'import sys,json; print(len(json.load(sys.stdin)))') 条"
+          fi
+          # 拉取已有 raw 数据（用于同日追加去重）
+          if [ -d "/tmp/Masters-Council/vault/raw" ]; then
+            cp -r /tmp/Masters-Council/vault/raw vault/raw
+            echo "✅ 拉取已有 raw 数据"
+          fi
+          rm -rf /tmp/Masters-Council
+
       - uses: actions/setup-python@v4
         with:
           python-version: '3.9'

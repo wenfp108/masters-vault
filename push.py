@@ -61,6 +61,12 @@ def copy_vault(mode):
             shutil.copytree(src, dst)
             copied.append("raw")
 
+        # 推送去重记录
+        seen_src = VAULT_DIR / ".seen.json"
+        if seen_src.exists():
+            shutil.copy2(seen_src, target / ".seen.json")
+            copied.append(".seen.json")
+
     if mode in ("all", "filtered"):
         src = VAULT_DIR / "filtered"
         if src.exists():

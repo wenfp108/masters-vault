@@ -470,7 +470,12 @@ def save_data(master_key, items):
     existing = []
     if out_file.exists():
         existing = json.loads(out_file.read_text())
-    existing.extend(items)
+
+    # 同日去重：按 url+title 去重
+    existing_keys = {item_id(i) for i in existing}
+    new_items = [i for i in items if item_id(i) not in existing_keys]
+
+    existing.extend(new_items)
     out_file.write_text(json.dumps(existing, ensure_ascii=False, indent=2))
     return len(existing)
 
