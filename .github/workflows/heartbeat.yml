@@ -1,0 +1,38 @@
+name: Heartbeat (Anti-Suspension)
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 每天北京时间 08:00
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update Heartbeat
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # 更新 README 里的时间戳
+          python3 -c "
+          import datetime
+          filename = 'README.md'
+          if __name__ == '__main__':
+              with open(filename, 'r', encoding='utf-8') as f:
+                  content = f.read()
+              today = datetime.date.today().isoformat()
+              import re
+              content = re.sub(r'Last Updated: \d{4}-\d{2}-\d{2}', f'Last Updated: {today}', content)
+              with open(filename, 'w', encoding='utf-8') as f:
+                  f.write(content)
+          "
+
+          git add README.md
+          git commit -m "heartbeat: $(date +'%Y-%m-%d') [skip ci]" || echo "No changes"
+          git push

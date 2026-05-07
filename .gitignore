@@ -1,3 +1,4 @@
-data/.seen.json
+data/
+vault/
 __pycache__/
 *.pyc

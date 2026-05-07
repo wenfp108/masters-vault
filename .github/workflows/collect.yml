@@ -24,9 +24,7 @@ jobs:
       - name: Run Collector
         run: python collector.py
 
-      - name: Commit Results
-        run: |
-          git config user.name "Vault Bot"
-          git config user.email "bot@wenfp108.com"
-          git add data/ README.md
-          git diff --cached --quiet || (git commit -m "🏛️ Daily collect $(date +'%Y-%m-%d')" && git push)
+      - name: Push Raw Data to Masters-Council
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: python push.py --raw-only

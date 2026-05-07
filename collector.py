@@ -1,6 +1,7 @@
 """
 Masters Vault — 数据采集器
 每天爬一次，收集大师相关的书籍、视频、推文、播客、文章链接。
+纯采集，不依赖 AI。原始数据存到 vault/raw/。
 """
 
 import os, json, yaml, hashlib, time, re
@@ -10,8 +11,8 @@ import requests
 import feedparser
 
 BJ = timezone(timedelta(hours=8))
-DATA_DIR = Path("data")
-DEDUP_FILE = DATA_DIR / ".seen.json"
+DATA_DIR = Path("vault/raw")
+DEDUP_FILE = Path("vault/.seen.json")
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
@@ -25,6 +26,7 @@ def load_seen():
 
 
 def save_seen(seen):
+    DEDUP_FILE.parent.mkdir(parents=True, exist_ok=True)
     DEDUP_FILE.write_text(json.dumps(seen, ensure_ascii=False, indent=2))
 
 
@@ -171,7 +173,6 @@ def search_goodreads(query, limit=5):
             params={"q": query, "search_type": "books"},
             headers=HEADERS, timeout=15
         )
-        # 只返回搜索页链接
         return [{
             "type": "book-list",
             "title": f"Goodreads: {query}",
@@ -208,7 +209,6 @@ def _crawl_youtube(cfg):
 
 
 def _crawl_twitter(cfg):
-    # Twitter 搜索通过 Google News RSS 间接获取
     items = []
     account = None
     for src in cfg.get("sources", {}).get("twitter", []):
@@ -217,7 +217,6 @@ def _crawl_twitter(cfg):
         for kw in src.get("keywords", []):
             items.extend(search_news(f"twitter {kw}", limit=5))
             time.sleep(0.5)
-    # 也搜索 nitter RSS（如果可用）
     if account:
         try:
             r = requests.get(f"https://nitter.net/{account}/rss", headers=HEADERS, timeout=10)
@@ -304,6 +303,124 @@ def _crawl_reports(cfg):
     return items
 
 
+# ─── 采集时算法过滤 ───────────────────────────────────────
+
+def clean_items(items):
+    """按内容类型做规则过滤，采集时就剔除噪音"""
+    cleaned = []
+    for item in items:
+        if _should_keep(item):
+            cleaned.append(item)
+    return cleaned
+
+
+def _should_keep(item):
+    """单条数据是否值得保留"""
+    title = (item.get("title") or "").strip()
+    itype = item.get("type", "")
+
+    # 通用：标题太短
+    if len(title) < 10:
+        return False
+
+    # 通用：全是大写（标题党特征）
+    if title.isupper() and len(title) > 20:
+        return False
+
+    # 通用：标题党关键词
+    title_lower = title.lower()
+    blockwords = [
+        "reaction", "reacts to", "responds to", "responding to",
+        "top 10", "top 5", "top 100", "you won't believe",
+        "compilation", "best of", "moments", "try not to laugh",
+        "tiktok", "shorts", "clickbait",
+    ]
+    if any(kw in title_lower for kw in blockwords):
+        return False
+
+    # 按类型过滤
+    if itype == "video":
+        return _keep_video(item)
+    elif itype == "tweet":
+        return _keep_tweet(item)
+    elif itype == "article":
+        return _keep_article(item)
+    elif itype == "book":
+        return _keep_book(item)
+
+    # paper, podcast, report, blog → 默认保留
+    return True
+
+
+def _keep_video(item):
+    """视频过滤：去短视频、切片"""
+    duration = item.get("duration")
+
+    # 短视频 < 120 秒（切片、Shorts）
+    if duration and duration < 120:
+        return False
+
+    # 标题暗示是切片
+    title_lower = (item.get("title") or "").lower()
+    clip_hints = ["clip", "short", "highlight", "moment", "excerpt"]
+    if any(h in title_lower for h in clip_hints):
+        return False
+
+    return True
+
+
+def _keep_tweet(item):
+    """推文过滤：去太短、去纯转推"""
+    title = item.get("title", "")
+
+    # 太短的推文没有信息量
+    if len(title) < 30:
+        return False
+
+    # 纯转推标记
+    if title.startswith("RT ") or title.startswith("RT:"):
+        return False
+
+    # 只是 @ 了某人，没有实质内容
+    if title.count("@") > 3 and len(title.split()) < 10:
+        return False
+
+    return True
+
+
+def _keep_article(item):
+    """文章过滤：去纯引用标题"""
+    title = item.get("title", "")
+
+    # 标题只是带引号的引用（如: Dalio says "xxx"）
+    # 这类通常是低质量新闻引用一句话
+    if title.startswith('"') and title.endswith('"') and len(title) < 80:
+        return False
+
+    # Google News 特有的 "来源 - 站名" 格式，标题部分太短
+    if " - " in title:
+        headline = title.rsplit(" - ", 1)[0].strip()
+        if len(headline) < 15:
+            return False
+
+    return True
+
+
+def _keep_book(item):
+    """书籍过滤：去泛搜索链接"""
+    title = item.get("title", "")
+
+    # Z-Library 泛搜索页（不是具体书）
+    if title.startswith("Z-Library:"):
+        return False
+
+    # Goodreads 搜索页
+    if title.startswith("Goodreads:"):
+        return False
+
+    return True
+
+
 def collect_master(master, seen):
     name = master.get("name", "unknown")
     file_key = master["_file"]
@@ -314,6 +431,13 @@ def collect_master(master, seen):
         if source_type in _flatten_sources(master):
             items = crawler(master)
             all_items.extend(items)
+
+    # 采集时算法过滤
+    before_clean = len(all_items)
+    all_items = clean_items(all_items)
+    cleaned = before_clean - len(all_items)
+    if cleaned:
+        print(f"   🧹 算法过滤: 去除 {cleaned} 条噪音")
 
     # 去重
     new_items = []
@@ -327,7 +451,7 @@ def collect_master(master, seen):
             }
             new_items.append(item)
 
-    print(f"   ✅ {len(all_items)} 条采集, {len(new_items)} 条新增")
+    print(f"   ✅ {before_clean} → {len(new_items)} 条 (算法去噪 {cleaned}, 去重 {len(all_items) - len(new_items)})")
     return new_items
 
 
@@ -343,7 +467,6 @@ def save_data(master_key, items):
     out_dir.mkdir(parents=True, exist_ok=True)
     out_file = out_dir / f"{day_str}.json"
 
-    # 追加到当日文件
     existing = []
     if out_file.exists():
         existing = json.loads(out_file.read_text())
@@ -352,60 +475,8 @@ def save_data(master_key, items):
     return len(existing)
 
 
-def generate_readme(masters_results):
-    now = datetime.now(BJ).strftime("%Y-%m-%d %H:%M")
-    total_new = sum(r["new"] for r in masters_results)
-    total_all = sum(r["total"] for r in masters_results)
-
-    md = f"""# 🏛️ Masters Vault
-
-> 大师数据归档 — 每日自动采集
->
-> 更新：{now} BJT
-
-| 大师 | 今日新增 | 总量 | 数据源 |
-|:-----|:--------|:-----|:-------|
-"""
-    for r in sorted(masters_results, key=lambda x: x["new"], reverse=True):
-        md += f"| {r['name']} | +{r['new']} | {r['total']} | {r['sources']} |\n"
-
-    md += f"""
-**合计**: {total_new} 条新增 / {total_all} 条总量
-
-## 数据说明
-
-| 类型 | 存储方式 |
-|:-----|:---------|
-| 书籍 | zlibrary 链接 |
-| 视频 | YouTube 链接 + 标题 |
-| 推文 | 公开内容 (via nitter/Google News) |
-| 播客 | RSS / Apple Podcasts 链接 |
-| 文章 | 新闻链接 + 标题 |
-| 论文 | arxiv 链接 |
-| 年报/备忘录 | 官方链接 |
-
-## 目录结构
-
-```
-data/
-├── munger/     # Charlie Munger
-├── naval/      # Naval Ravikant
-├── dalio/      # Ray Dalio
-├── taleb/      # Nassim Taleb
-├── buffett/    # Warren Buffett
-├── marks/      # Howard Marks
-├── li_lu/      # Li Lu
-└── soros/      # George Soros
-```
-
----
-*by [masters-vault](https://github.com/wenfp108/masters-vault) · 每日自动采集*
-"""
-    Path("README.md").write_text(md, encoding="utf-8")
-
-
 def main():
-    DATA_DIR.mkdir(exist_ok=True)
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
     seen = load_seen()
     masters = load_masters()
     results = []
@@ -434,10 +505,21 @@ def main():
         })
 
     save_seen(seen)
-    generate_readme(results)
 
     total_new = sum(r["new"] for r in results)
     print(f"\n🏛️ 采集完成: {total_new} 条新增, {len(masters)} 位大师")
+    print(f"📁 原始数据: {DATA_DIR.resolve()}")
+
+    # 输出摘要供 push.py 使用
+    summary = {
+        "timestamp": datetime.now(BJ).isoformat(),
+        "total_new": total_new,
+        "masters": len(masters),
+        "results": results,
+    }
+    Path("vault/last_collect.json").write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2)
+    )
 
 
 if __name__ == "__main__":

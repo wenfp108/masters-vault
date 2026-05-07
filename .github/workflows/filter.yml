@@ -1,0 +1,32 @@
+name: AI Filter
+
+on:
+  schedule:
+    - cron: '57 3 * * *'  # 北京时间 11:57 (采集后 20 分钟)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  filter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Dependencies
+        run: pip install requests
+
+      - name: Run AI Filter
+        env:
+          SILICON_FLOW_KEY: ${{ secrets.SILICON_FLOW_KEY }}
+        run: python filter.py
+
+      - name: Push Filtered Data to Masters-Council
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: python push.py --filtered
