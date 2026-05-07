@@ -2,19 +2,19 @@
 
 > 大师数据归档 — 每日自动采集
 >
-> 更新：2026-05-07 11:17 BJT
+> 更新：2026-05-07 11:25 BJT
 
 | 大师 | 今日新增 | 总量 | 数据源 |
 |:-----|:--------|:-----|:-------|
-| Nassim Nicholas Taleb | +70 | 70 | article, book, tweet, video |
-| Ray Dalio | +69 | 69 | article, book, report, tweet, video |
-| Naval Ravikant | +62 | 62 | article, blog, book, podcast, tweet, video |
-| Charlie Munger | +58 | 58 | article, book, podcast, report, video |
-| Warren Buffett | +51 | 51 | article, book, report, tweet, video |
-| Howard Marks | +37 | 37 | article, book, report, video |
-| Li Lu (李录) | +30 | 30 | article, book, video |
+| Nassim Nicholas Taleb | +81 | 151 | article, book, paper, tweet, video |
+| Ray Dalio | +70 | 139 | article, book, report, tweet, video |
+| Naval Ravikant | +63 | 125 | article, blog, book, podcast, tweet, video |
+| Charlie Munger | +60 | 118 | article, book, podcast, report, video |
+| Warren Buffett | +53 | 104 | article, book, report, tweet, video |
+| Howard Marks | +39 | 76 | article, book, report, video |
+| Li Lu (李录) | +30 | 60 | article, book, video |
 
-**合计**: 377 条新增 / 377 条总量
+**合计**: 396 条新增 / 773 条总量
 
 ## 数据说明
 
